@@ -1764,7 +1764,7 @@ async function preSaveProduct(){
   document.getElementById("nutrPopup").classList.add("open");
   
   try{
-    const res=await fetch("https://world.openfoodfacts.org/cgi/search.pl?search_terms="+encodeURIComponent(nome)+"&search_simple=1&action=process&json=1&lc=it&cc=it&fields=product_name,product_name_it,nutriments&page_size=4");
+    const res=await fetch("https://world.openfoodfacts.org/cgi/search.pl?search_terms="+encodeURIComponent(nome)+"&search_simple=1&action=process&json=1&lc=it&cc=it&fields=product_name,product_name_it,nutriments&page_size=10");
     const data=await res.json();
     const found=(data.products||[]).filter(p=>estraiNutr(p.nutriments));
     
