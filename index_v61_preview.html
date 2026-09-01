@@ -1584,7 +1584,13 @@ function renderStgBody(k){
   }
   if(k==="dati"){
     const savedKey=localStorage.getItem("dispensa_preview_v61_gemini_api_key")||"";
-    el.innerHTML=`<div style="margin-bottom:10px;padding:12px;background:var(--bg3);border-radius:12px;border:1px solid var(--border)"><div style="font-size:.8rem;color:var(--text2);font-weight:600;margin-bottom:8px">📄 Esporta lista dispensa</div><div style="display:flex;gap:8px"><button class="btn-s" style="flex:1" onclick="esportaDispensaTesto()">📄 Scarica .txt</button><button class="btn-s" style="flex:1" onclick="condividiDispensa()">📤 Condividi</button></div></div>
+    el.innerHTML=`<div style="margin-bottom:10px;padding:12px;background:var(--bg3);border-radius:12px;border:1px solid var(--border)">
+      <div style="font-size:.8rem;color:var(--text2);font-weight:700;margin-bottom:6px">🧪 Copia realistica dalla v60</div>
+      <div style="font-size:.75rem;color:var(--text2);line-height:1.45;margin-bottom:9px">Legge prodotti, luoghi e ripiani salvati dalla v60 su questo dispositivo e li copia soltanto nell'archivio isolato della preview. Il database originale non viene modificato.</div>
+      <button class="btn-p" style="margin:0" onclick="prepareCopyFromV60()">📥 Copia dati dalla v60</button>
+      <div id="copyV60Status" style="font-size:.75rem;color:var(--text2);margin-top:7px;text-align:center"></div>
+    </div>
+    <div style="margin-bottom:10px;padding:12px;background:var(--bg3);border-radius:12px;border:1px solid var(--border)"><div style="font-size:.8rem;color:var(--text2);font-weight:600;margin-bottom:8px">📄 Esporta lista dispensa</div><div style="display:flex;gap:8px"><button class="btn-s" style="flex:1" onclick="esportaDispensaTesto()">📄 Scarica .txt</button><button class="btn-s" style="flex:1" onclick="condividiDispensa()">📤 Condividi</button></div></div>
     <div class="fg" style="margin-bottom:14px">
       <label class="flabel">🤖 API Key Gemini (per Ricette e Menu)</label>
       <div class="vrow">
@@ -1680,6 +1686,40 @@ setInterval(()=>{if(settings.notif)fireNotif();},3600000);
 function exportData(){
   const blob=new Blob([JSON.stringify({products,luoghi:settings.luoghi,essenziali:settings.essenziali},null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="dispensa_backup.json";a.click();
+}
+function readV60Snapshot(){
+  const rawProducts=localStorage.getItem("dispensa_v4");
+  if(!rawProducts)return{ok:false,message:"Nessun archivio v60 trovato in questo browser."};
+  try{
+    const sourceProducts=JSON.parse(rawProducts);
+    if(!Array.isArray(sourceProducts))return{ok:false,message:"L'archivio v60 non contiene un elenco prodotti valido."};
+    let sourceSettings=null;
+    try{sourceSettings=JSON.parse(localStorage.getItem("dispensa_settings_v4")||"null");}catch{}
+    const categoryCounts={};
+    sourceProducts.forEach(function(p){const c=p&&p.cat?p.cat:"(senza categoria)";categoryCounts[c]=(categoryCounts[c]||0)+1;});
+    return{ok:true,products:sourceProducts,settings:sourceSettings,categoryCounts:categoryCounts};
+  }catch{return{ok:false,message:"Non riesco a leggere i dati v60 salvati in questo browser."};}
+}
+function prepareCopyFromV60(){
+  const snap=readV60Snapshot();
+  const status=document.getElementById("copyV60Status");
+  if(!snap.ok){if(status)status.textContent="⚠️ "+snap.message;showToast("⚠️ "+snap.message,"var(--red)");return;}
+  const categoryTotal=Object.keys(snap.categoryCounts).length;
+  if(status)status.textContent="Trovati "+snap.products.length+" prodotti in "+categoryTotal+" categorie.";
+  askConfirm("Copiare "+snap.products.length+" prodotti della v60 nella preview? I dati di prova attuali verranno sostituiti; la v60 resterà invariata.",function(){copyFromV60(snap);});
+}
+function copyFromV60(snap){
+  products=JSON.parse(JSON.stringify(snap.products));
+  if(snap.settings&&typeof snap.settings==="object"){
+    if(Array.isArray(snap.settings.luoghi))settings.luoghi=JSON.parse(JSON.stringify(snap.settings.luoghi));
+    if(Array.isArray(snap.settings.essenziali))settings.essenziali=JSON.parse(JSON.stringify(snap.settings.essenziali));
+  }
+  saveP();saveS();
+  localStorage.setItem("dispensa_preview_v61_v60_copy_info",JSON.stringify({copiedAt:new Date().toISOString(),products:products.length,categories:Object.keys(snap.categoryCounts).length}));
+  const status=document.getElementById("copyV60Status");
+  if(status)status.textContent="✅ Copiati "+products.length+" prodotti. Database v60 invariato.";
+  showToast("✅ Copiati "+products.length+" prodotti dalla v60");
+  renderHome();
 }
 function importDataPrompt(){document.getElementById("importFile").click();}
 function importData(input){
