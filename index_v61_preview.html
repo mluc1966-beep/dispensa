@@ -738,7 +738,7 @@ const DEFAULT_ESSENZIALI=[
   {id:"e4",nome:"Pasta",cat:"🍝 Pasta e Riso",unit:"g",soglia:500},
   {id:"e5",nome:"Olio EVO",cat:"🫒 Oli e Grassi",unit:"L",soglia:0.5},
 ];
-const CATS={"🥛 Latticini":"🥛","🥩 Carne":"🥩","🐟 Pesce":"🐟","🥦 Verdure":"🥦","🍎 Frutta":"🍎","🍝 Pasta e Riso":"🍝","🌾 Farine":"🌾","🫘 Legumi e Simili":"🫘","🥫 Conserve":"🥫","🧂 Condimenti":"🧂","🌶️ Spezie":"🌶️","🍞 Pane e Sostituti":"🍞","🍰 Dolci":"🍰","🍿 Snack e Dolciumi":"🍿","🍷 Vini e Liquori":"🍷","🧊 Surgelati":"🧊","🥚 Uova":"🥚","🫒 Oli e Grassi":"🫒","🥤 Bevande":"🥤","🏠 Cura della Casa":"🏠","🧴 Igiene Personale":"🧴","⬜ Altro":"⬜"};
+const CATS={"🥦 Verdure":"🥦","🍎 Frutta":"🍎","🥩 Carne e salumi":"🥩","🐟 Pesce":"🐟","🥛 Latticini e uova":"🥛","🍝 Pasta, riso e cereali":"🍝","🌾 Farine e panificazione":"🌾","🫘 Legumi":"🫘","🥫 Conserve":"🥫","🍯 Confetture e spalmabili":"🍯","🫒 Oli e condimenti":"🫒","🌿 Spezie e aromi":"🌿","🍞 Pane e sostituti":"🍞","🍰 Dolci":"🍰","🍿 Snack e dolciumi":"🍿","🥤 Bevande":"🥤","🍷 Vini e liquori":"🍷","🏠 Cura della casa":"🏠","🧴 Igiene personale":"🧴","🐾 Animali":"🐾","🌱 Giardino e piante":"🌱","⬜ Altro":"⬜"};
 const CAT_KEYS=Object.keys(CATS);
 const UNITS=["pz","g","kg","ml","L","confezione","busta","scatola","bottiglia"];
 const THEMES=[
@@ -1590,6 +1590,13 @@ function renderStgBody(k){
       <button class="btn-p" style="margin:0" onclick="prepareCopyFromV60()">📥 Copia dati dalla v60</button>
       <div id="copyV60Status" style="font-size:.75rem;color:var(--text2);margin-top:7px;text-align:center"></div>
     </div>
+    <div style="margin-bottom:10px;padding:12px;background:var(--bg3);border-radius:12px;border:1px solid var(--border)">
+      <div style="font-size:.8rem;color:var(--text2);font-weight:700;margin-bottom:6px">🗂️ Allineamento categorie</div>
+      <div style="font-size:.75rem;color:var(--text2);line-height:1.45;margin-bottom:9px">Converte soltanto le categorie della copia presente nella preview usando lo stesso elenco della Lista della spesa. Tutti gli altri dati restano invariati.</div>
+      <button class="btn-p" style="margin:0" onclick="prepareCategoryMigration()">🔄 Allinea categorie nella preview</button>
+      <button class="btn-s" style="width:100%;margin-top:7px" onclick="restorePreMigrationPreview()">↩️ Ripristina stato precedente al test</button>
+      <div id="categoryMigrationStatus" style="font-size:.75rem;color:var(--text2);margin-top:7px;text-align:center"></div>
+    </div>
     <div style="margin-bottom:10px;padding:12px;background:var(--bg3);border-radius:12px;border:1px solid var(--border)"><div style="font-size:.8rem;color:var(--text2);font-weight:600;margin-bottom:8px">📄 Esporta lista dispensa</div><div style="display:flex;gap:8px"><button class="btn-s" style="flex:1" onclick="esportaDispensaTesto()">📄 Scarica .txt</button><button class="btn-s" style="flex:1" onclick="condividiDispensa()">📤 Condividi</button></div></div>
     <div class="fg" style="margin-bottom:14px">
       <label class="flabel">🤖 API Key Gemini (per Ricette e Menu)</label>
@@ -1720,6 +1727,81 @@ function copyFromV60(snap){
   if(status)status.textContent="✅ Copiati "+products.length+" prodotti. Database v60 invariato.";
   showToast("✅ Copiati "+products.length+" prodotti dalla v60");
   renderHome();
+}
+const CATEGORY_MIGRATION_MAP={
+  "Latticini":"🥛 Latticini e uova","Latticini e uova":"🥛 Latticini e uova","Uova":"🥛 Latticini e uova",
+  "Carne":"🥩 Carne e salumi","Carne e salumi":"🥩 Carne e salumi","Pesce":"🐟 Pesce",
+  "Verdure":"🥦 Verdure","Frutta":"🍎 Frutta","Pasta e Riso":"🍝 Pasta, riso e cereali","Pasta, riso e cereali":"🍝 Pasta, riso e cereali",
+  "Farine":"🌾 Farine e panificazione","Farine e panificazione":"🌾 Farine e panificazione","Legumi e Simili":"🫘 Legumi","Legumi":"🫘 Legumi",
+  "Conserve":"🥫 Conserve","Confetture e spalmabili":"🍯 Confetture e spalmabili",
+  "Condimenti":"🫒 Oli e condimenti","Oli e Grassi":"🫒 Oli e condimenti","Oli e condimenti":"🫒 Oli e condimenti",
+  "Spezie":"🌿 Spezie e aromi","Spezie e aromi":"🌿 Spezie e aromi","Pane e Sostituti":"🍞 Pane e sostituti","Pane e sostituti":"🍞 Pane e sostituti","Pane e Dolci":"🍞 Pane e sostituti",
+  "Dolci":"🍰 Dolci","Snack e Dolciumi":"🍿 Snack e dolciumi","Snack e dolciumi":"🍿 Snack e dolciumi",
+  "Bevande":"🥤 Bevande","Vini e Liquori":"🍷 Vini e liquori","Vini e liquori":"🍷 Vini e liquori",
+  "Cura della Casa":"🏠 Cura della casa","Cura della casa":"🏠 Cura della casa","Igiene Personale":"🧴 Igiene personale","Igiene personale":"🧴 Igiene personale",
+  "Animali":"🐾 Animali","Giardino e piante":"🌱 Giardino e piante","Altro":"⬜ Altro"
+};
+function categoryFromFrozenName(nome){
+  const n=String(nome||"").toLowerCase();
+  if(/latte|yogurt|formagg|mozzarell|ricott|burro|uov/.test(n))return"🥛 Latticini e uova";
+  if(/pollo|tacchin|manzo|maiale|carne|hamburger|salsicc|prosciutt|salame/.test(n))return"🥩 Carne e salumi";
+  if(/pesce|salmone|tonno|merluzz|orata|gamber|cozz|calamar|polp/.test(n))return"🐟 Pesce";
+  if(/pisell|fagiol|lenticchi|cec|soia|tofu/.test(n))return"🫘 Legumi";
+  if(/spinac|verd|broccol|zucchin|melanzan|peperon|carot|patat|pomodor|minestron/.test(n))return"🥦 Verdure";
+  if(/frutt|fragol|mirtill|lampone|pesca|mela|pera|banana/.test(n))return"🍎 Frutta";
+  if(/pane|pizza|focacci|piadin|grissin/.test(n))return"🍞 Pane e sostituti";
+  if(/pasta|riso|lasagn|gnocch|cereal/.test(n))return"🍝 Pasta, riso e cereali";
+  if(/gelat|torta|dolce|dessert/.test(n))return"🍰 Dolci";
+  return"⬜ Altro";
+}
+function migrateCategoryValue(cat,nome){
+  if(CAT_KEYS.includes(cat))return cat;
+  const label=catLabel(String(cat||"")).trim();
+  if(label.toLowerCase()==="surgelati")return categoryFromFrozenName(nome);
+  if(CATEGORY_MIGRATION_MAP[label])return CATEGORY_MIGRATION_MAP[label];
+  const exact=Object.keys(CATEGORY_MIGRATION_MAP).find(function(k){return k.toLowerCase()===label.toLowerCase();});
+  return exact?CATEGORY_MIGRATION_MAP[exact]:"⬜ Altro";
+}
+function buildCategoryMigrationPlan(){
+  const changes=[];
+  products.forEach(function(p){const next=migrateCategoryValue(p.cat,p.nome);if(next!==p.cat)changes.push({product:p,from:p.cat||"(senza categoria)",to:next});});
+  const receivedChanges=[];
+  prodottiRicevuti.forEach(function(p){const next=migrateCategoryValue(p.cat,p.nome);if(next!==p.cat)receivedChanges.push({product:p,from:p.cat||"(senza categoria)",to:next});});
+  const essentialChanges=[];
+  (settings.essenziali||[]).forEach(function(p){const next=migrateCategoryValue(p.cat,p.nome);if(next!==p.cat)essentialChanges.push({product:p,from:p.cat||"(senza categoria)",to:next});});
+  return{changes:changes,receivedChanges:receivedChanges,essentialChanges:essentialChanges,total:changes.length+receivedChanges.length+essentialChanges.length};
+}
+function prepareCategoryMigration(){
+  const plan=buildCategoryMigrationPlan();
+  const status=document.getElementById("categoryMigrationStatus");
+  if(!plan.total){if(status)status.textContent="✅ Le categorie sono già allineate.";showToast("✅ Categorie già allineate");return;}
+  if(status)status.textContent="Da aggiornare: "+plan.changes.length+" prodotti, "+plan.receivedChanges.length+" ricevuti e "+plan.essentialChanges.length+" essenziali.";
+  askConfirm("Allineare le categorie di "+plan.total+" elementi nella preview? Nome, quantità, posizione, scadenza e nutrienti non verranno modificati.",function(){applyCategoryMigration(plan);});
+}
+function applyCategoryMigration(plan){
+  localStorage.setItem("dispensa_preview_v61_pre_category_migration",JSON.stringify({products:products,prodottiRicevuti:prodottiRicevuti,essenziali:settings.essenziali||[],savedAt:new Date().toISOString()}));
+  plan.changes.forEach(function(x){x.product.cat=x.to;});
+  plan.receivedChanges.forEach(function(x){x.product.cat=x.to;});
+  plan.essentialChanges.forEach(function(x){x.product.cat=x.to;});
+  saveP();saveReceived();saveS();
+  const summary={migratedAt:new Date().toISOString(),products:plan.changes.length,received:plan.receivedChanges.length,essentials:plan.essentialChanges.length};
+  localStorage.setItem("dispensa_preview_v61_category_migration",JSON.stringify(summary));
+  const status=document.getElementById("categoryMigrationStatus");
+  if(status)status.textContent="✅ Allineati "+plan.total+" elementi. Nessun altro dato modificato.";
+  showToast("✅ Categorie allineate: "+plan.total+" elementi");
+  renderHome();
+}
+function restorePreMigrationPreview(){
+  let backup=null;
+  try{backup=JSON.parse(localStorage.getItem("dispensa_preview_v61_pre_category_migration")||"null");}catch{}
+  if(!backup||!Array.isArray(backup.products)){showToast("⚠️ Nessun salvataggio precedente disponibile","var(--red)");return;}
+  askConfirm("Ripristinare nella preview le categorie precedenti al test? La v60 non verrà modificata.",function(){
+    products=backup.products;
+    if(Array.isArray(backup.prodottiRicevuti))prodottiRicevuti=backup.prodottiRicevuti;
+    if(Array.isArray(backup.essenziali))settings.essenziali=backup.essenziali;
+    saveP();saveReceived();saveS();
+    showToast("✅ Stato precedente ripristinato");renderHome();
+  });
 }
 function importDataPrompt(){document.getElementById("importFile").click();}
 function importData(input){
@@ -2411,27 +2493,29 @@ let scannerSpesaMode=false;
 function mappaCat(tags){
   if(!tags)return"";
   const t=(Array.isArray(tags)?tags.join(" "):String(tags)).toLowerCase();
-  if(t.match(/dairy|cheese|milk|latte|yogurt|latticin|formaggio|mozzarella|parmigiano/))return"🥛 Latticini";
-  if(t.match(/meat|beef|chicken|pork|carne|pollo|manzo|maiale|salumi|prosciutto/))return"🥩 Carne";
+  if(t.match(/dairy|cheese|milk|latte|yogurt|latticin|formaggio|mozzarella|parmigiano|egg|uov/))return"🥛 Latticini e uova";
+  if(t.match(/meat|beef|chicken|pork|carne|pollo|manzo|maiale|salumi|prosciutto/))return"🥩 Carne e salumi";
   if(t.match(/fish|seafood|salmon|tuna|pesce|salmone|tonno|merluzzo/))return"🐟 Pesce";
   if(t.match(/vegetable|verdura|spinaci|carote|zucchine|pomodor|insalata|legume|fagioli/))return"🥦 Verdure";
   if(t.match(/fruit|frutta|mela|pera|banana|arancia|fragol/))return"🍎 Frutta";
-  if(t.match(/pasta|rice|riso|cereali|grain|noodle|gnocchi/))return"🍝 Pasta e Riso";
+  if(t.match(/pasta|rice|riso|cereali|grain|noodle|gnocchi/))return"🍝 Pasta, riso e cereali";
+  if(t.match(/flour|farina|semola|lievito|panificazione/))return"🌾 Farine e panificazione";
   if(t.match(/conserve|canned|tomato|pelati|passata|jar|barattolo/))return"🥫 Conserve";
-  if(t.match(/sauce|condiment|salt|pepper|vinegar|aceto|sale|spezie|mustard|ketchup/))return"🧂 Condimenti";
-  if(t.match(/bread|pane|crackers|grissini|fette biscottate|piadina/))return"🍞 Pane e Sostituti";
+  if(t.match(/jam|marmellata|confettura|spalmabile|spread/))return"🍯 Confetture e spalmabili";
+  if(t.match(/oil|olio|butter|burro|margarina|grasso|sauce|condiment|salt|vinegar|aceto|sale|mustard|ketchup/))return"🫒 Oli e condimenti";
+  if(t.match(/bread|pane|crackers|grissini|fette biscottate|piadina/))return"🍞 Pane e sostituti";
   if(t.match(/cake|torta|biscotti|dolci|cioccolato|caramelle|confetti|pasticceria/))return"🍰 Dolci";
-  if(t.match(/snack|patatine|popcorn|nachos|crackers|chips/))return"🍿 Snack e Dolciumi";
-  if(t.match(/wine|vino|liquore|spirits|beer|birra|whisky|grappa|amaro/))return"🍷 Vini e Liquori";
-  if(t.match(/spice|spezia|spezie|pepe|curry|paprika|origano|basilico|cannella/))return"🌶️ Spezie";
-  if(t.match(/detergent|detersivo|casa|pulizia|ammorbidente|candeggina/))return"🏠 Cura della Casa";
-  if(t.match(/sapone|shampoo|bagnoschiuma|dentifricio|igiene|cosmetic|deodorant|crema/))return"🧴 Igiene Personale";
-  if(t.match(/legumi|fagioli|lenticchie|ceci|piselli secchi|fave|soia|tofu|lupini/))return"🫘 Legumi e Simili";
-  if(t.match(/frozen|surgelat/))return"🧊 Surgelati";
-  if(t.match(/egg|uov/))return"🥚 Uova";
-  if(t.match(/oil|olio|butter|burro|margarina|grasso/))return"🫒 Oli e Grassi";
+  if(t.match(/snack|patatine|popcorn|nachos|crackers|chips/))return"🍿 Snack e dolciumi";
+  if(t.match(/wine|vino|liquore|spirits|beer|birra|whisky|grappa|amaro/))return"🍷 Vini e liquori";
+  if(t.match(/spice|spezia|spezie|pepe|curry|paprika|origano|basilico|cannella/))return"🌿 Spezie e aromi";
+  if(t.match(/detergent|detersivo|casa|pulizia|ammorbidente|candeggina/))return"🏠 Cura della casa";
+  if(t.match(/sapone|shampoo|bagnoschiuma|dentifricio|igiene|cosmetic|deodorant|crema/))return"🧴 Igiene personale";
+  if(t.match(/legumi|fagioli|lenticchie|ceci|piselli secchi|fave|soia|tofu|lupini/))return"🫘 Legumi";
+  if(t.match(/pet|animali|cane|gatto|crocchette/))return"🐾 Animali";
+  if(t.match(/garden|giardino|pianta|semi|terriccio|concime|fiore/))return"🌱 Giardino e piante";
+  if(t.match(/frozen|surgelat/))return"⬜ Altro";
   if(t.match(/beverage|drink|water|acqua|succo|juice|soda|wine|vino|beer|birra|caffe|tea/))return"🥤 Bevande";
-  return"🧴 Altro";
+  return"⬜ Altro";
 }
 
 async function cercaBarcode(code){
